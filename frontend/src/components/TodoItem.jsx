@@ -7,46 +7,33 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import { useDispatch } from "react-redux";
-import { removeTodo, updateTodo } from "../features/TotoSlice.js";
+import { removeTodo, updateTodo } from "../features/TodoSlice.js";
 
-const TodoItem = ({ todo, index }) => {
-  let completed = parseInt(todo.completed);
+const TodoItem = ({ todo, index = 0 }) => { // Default value for index
+  const completed = todo.completed; // Assumes completed is already 0 or 1 (numeric)
   const dispatch = useDispatch();
 
   const markCompleted = (todo) => {
-    if (todo.completed == 0) {
-      dispatch(
-        updateTodo({
-          id: todo.id,
-          title: todo.title,
-          completed: 1,
-          date: todo.date,
-          updated: Date.now(),
-        })
-      );
-    } else {
-      dispatch(
-        updateTodo({
-          id: todo.id,
-          title: todo.title,
-          completed: 0,
-          date: todo.date,
-          updated: Date.now(),
-        })
-      );
-    }
+    dispatch(
+      updateTodo({
+        id: todo.id,
+        title: todo.title,
+        completed: completed === 0 ? 1 : 0,
+        date: todo.date,
+        updated: Date.now(),
+      })
+    );
   };
+
   return (
     <li className="flex flex-col sm:flex-row sm:items-center justify-between border-b-2 py-2 gap-4">
       <div className="flex items-center">
         <span className="mr-4 text-gray-500">{index + 1}.</span>
-        <span
-          className={`mr-4 ${completed ? "line-through text-gray-500" : ""}`}
-        >
+        <span className={`mr-4 ${completed ? "line-through text-gray-500" : ""}`}>
           <span className="text-lg">{todo.title}</span>
           <p className="text-gray-500 text-sm italic">
-            created : {new Date(parseInt(todo.date)).toLocaleString("id-ID")} |
-            updated : {new Date(parseInt(todo.updated)).toLocaleString("id-ID")}
+            created : {new Date(todo.date).toLocaleString("id-ID")} |
+            updated : {new Date(todo.updated).toLocaleString("id-ID")}
           </p>
         </span>
       </div>
@@ -63,25 +50,21 @@ const TodoItem = ({ todo, index }) => {
         >
           <FaTrash />
         </button>
-        {!completed ? (
+        {completed === 0 && (
           <button
             className="text-sm bg-green-500 text-white sm:px-2 px-1 py-1 rounded"
             onClick={() => markCompleted(todo)}
           >
             <FaCheck />
           </button>
-        ) : (
-          ""
         )}
-        {completed ? (
+        {completed === 1 && (
           <button
             className="text-sm bg-yellow-500 text-white sm:px-2 px-1 py-1 rounded"
             onClick={() => markCompleted(todo)}
           >
             <FaTimes />
           </button>
-        ) : (
-          ""
         )}
       </div>
     </li>

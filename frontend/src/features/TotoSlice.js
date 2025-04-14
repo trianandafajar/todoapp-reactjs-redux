@@ -1,12 +1,14 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 
+// Async Thunks
 export const getAllTodos = createAsyncThunk("todos/getAllTodos", async () => {
   try {
     const result = await axios.get("todo");
     return result.data;
   } catch (error) {
-    console.log(error);
+    console.error(error);
+    throw new Error("Failed to fetch todos");
   }
 });
 
@@ -17,129 +19,113 @@ export const searchTodos = createAsyncThunk(
       const result = await axios.get(`todo?title_like=${query}`);
       return result.data;
     } catch (error) {
-      console.log(error);
+      console.error(error);
+      throw new Error("Failed to search todos");
     }
   }
 );
 
-export const isertTodo = createAsyncThunk("todos/isertTodo", async (todo) => {
+export const insertTodo = createAsyncThunk("todos/insertTodo", async (todo) => {
   try {
     await axios.post("todo", todo);
-    const result = await axios.get("todo");
-    return result.data;
+    return todo; // Returning the inserted todo directly instead of refetching
   } catch (err) {
-    console.log(err);
+    console.error(err);
+    throw new Error("Failed to add todo");
   }
 });
 
 export const removeTodo = createAsyncThunk("todos/removeTodo", async (id) => {
   try {
     await axios.delete(`todo/${id}`);
-    const result = await axios.get("todo");
-    return result.data;
+    return id; // Returning the id to remove it from the store
   } catch (err) {
-    console.log(err);
+    console.error(err);
+    throw new Error("Failed to remove todo");
   }
 });
 
 export const updateTodo = createAsyncThunk("todos/updateTodo", async (todo) => {
   try {
     await axios.put(`todo/${todo.id}`, todo);
-    const result = await axios.get("todo");
-    return result.data;
+    return todo; // Returning the updated todo
   } catch (err) {
-    console.log(err);
+    console.error(err);
+    throw new Error("Failed to update todo");
   }
 });
 
+// Initial state
+const initialState = {
+  data: [],
+  loading: false,
+  error: null,
+};
+
+// Reducers and extraReducers
 const todoSlice = createSlice({
   name: "todos",
-  initialState: {
-    data: null,
-    loading: false,
-    error: null,
-  },
+  initialState,
   reducers: {},
   extraReducers: (builder) => {
-    builder.addCase(getAllTodos.pending, (state) => {
+    const handlePending = (state) => {
       state.loading = true;
       state.error = null;
-      state.data = null;
-    });
-    builder.addCase(getAllTodos.fulfilled, (state, action) => {
-      state.data = action.payload;
+    };
+
+    const handleFulfilled = (state, action) => {
       state.loading = false;
       state.error = null;
-    });
-    builder.addCase(getAllTodos.rejected, (state, action) => {
-      state.data = null;
+    };
+
+    const handleRejected = (state, action) => {
       state.loading = false;
-      state.error = action.error.message;
-    });
-    // search
-    builder.addCase(searchTodos.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-      state.data = null;
-    });
-    builder.addCase(searchTodos.fulfilled, (state, action) => {
-      state.data = action.payload;
-      state.loading = false;
-      state.error = null;
-    });
-    builder.addCase(searchTodos.rejected, (state, action) => {
-      state.data = null;
-      state.loading = false;
-      state.error = action.error.message;
-    });
-    // insert
-    builder.addCase(isertTodo.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-      state.data = null;
-    });
-    builder.addCase(isertTodo.fulfilled, (state, action) => {
-      state.data = action.payload;
-      state.loading = false;
-      state.error = null;
-    });
-    builder.addCase(isertTodo.rejected, (state, action) => {
-      state.data = null;
-      state.loading = false;
-      state.error = action.error.message;
-    });
-    // remove
-    builder.addCase(removeTodo.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-      state.data = null;
-    });
-    builder.addCase(removeTodo.fulfilled, (state, action) => {
-      state.data = action.payload;
-      state.loading = false;
-      state.error = null;
-    });
-    builder.addCase(removeTodo.rejected, (state, action) => {
-      state.data = null;
-      state.loading = false;
-      state.error = action.error.message;
-    });
-    // update
-    builder.addCase(updateTodo.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-      state.data = null;
-    });
-    builder.addCase(updateTodo.fulfilled, (state, action) => {
-      state.data = action.payload;
-      state.loading = false;
-      state.error = null;
-    });
-    builder.addCase(updateTodo.rejected, (state, action) => {
-      state.data = null;
-      state.loading = false;
-      state.error = action.error.message;
-    });
+      state.error = action.error.message || "Something went wrong";
+    };
+
+    builder
+      // getAllTodos
+      .addCase(getAllTodos.pending, handlePending)
+      .addCase(getAllTodos.fulfilled, (state, action) => {
+        handleFulfilled(state, action);
+        state.data = action.payload;
+      })
+      .addCase(getAllTodos.rejected, handleRejected)
+
+      // searchTodos
+      .addCase(searchTodos.pending, handlePending)
+      .addCase(searchTodos.fulfilled, (state, action) => {
+        handleFulfilled(state, action);
+        state.data = action.payload;
+      })
+      .addCase(searchTodos.rejected, handleRejected)
+
+      // insertTodo
+      .addCase(insertTodo.pending, handlePending)
+      .addCase(insertTodo.fulfilled, (state, action) => {
+        handleFulfilled(state, action);
+        state.data.push(action.payload); // Directly push the new todo
+      })
+      .addCase(insertTodo.rejected, handleRejected)
+
+      // removeTodo
+      .addCase(removeTodo.pending, handlePending)
+      .addCase(removeTodo.fulfilled, (state, action) => {
+        handleFulfilled(state, action);
+        state.data = state.data.filter((todo) => todo.id !== action.payload); // Remove the deleted todo
+      })
+      .addCase(removeTodo.rejected, handleRejected)
+
+      // updateTodo
+      .addCase(updateTodo.pending, handlePending)
+      .addCase(updateTodo.fulfilled, (state, action) => {
+        handleFulfilled(state, action);
+        const index = state.data.findIndex((todo) => todo.id === action.payload.id);
+        if (index !== -1) {
+          state.data[index] = action.payload; // Update the specific todo
+        }
+      })
+      .addCase(updateTodo.rejected, handleRejected);
   },
 });
 

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { BsPlus, BsSearch } from "react-icons/bs";
 import TodoList from "./TodoList.jsx";
 import { useDispatch } from "react-redux";
-import { isertTodo, searchTodos } from "../features/TotoSlice.js";
+import { insertTodo, searchTodos } from "../features/TodoSlice.js"; // Fixed typo
 
 const Todo = () => {
   const [newTodoText, setNewTodoText] = useState("");
@@ -12,26 +12,25 @@ const Todo = () => {
   const handleAddTodoClick = () => {
     if (newTodoText) {
       dispatch(
-        isertTodo({
+        insertTodo({
           title: newTodoText,
           completed: 0,
           date: Date.now(),
           updated: Date.now(),
         })
       );
-      setNewTodoText("");
+      setNewTodoText(""); // Clear the input after adding the todo
     }
   };
 
-  const handleSearchChange = () => {
-    dispatch(searchTodos(searchTerm));
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    dispatch(searchTodos(e.target.value)); // Dispatch search directly on change
   };
 
   return (
     <div className="max-w-4xl mx-auto sm:mt-8 p-4 bg-gray-100 rounded">
-      <h2 className="mt-3 mb-6 text-2xl font-bold text-center uppercase">
-        Todo APP
-      </h2>
+      <h2 className="mt-3 mb-6 text-2xl font-bold text-center uppercase">Todo APP</h2>
       <div className="flex items-center mb-4">
         <input
           id="addTodoInput"
@@ -56,11 +55,11 @@ const Todo = () => {
             type="text"
             placeholder="Search Todos"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={handleSearchChange} // Trigger search on input change
           />
           <button
             className="ml-4 p-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none"
-            onClick={handleSearchChange}
+            onClick={() => dispatch(searchTodos(searchTerm))} // Optional: Search on button click if needed
           >
             <BsSearch size={20} />
           </button>

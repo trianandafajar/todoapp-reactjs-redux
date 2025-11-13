@@ -9,61 +9,84 @@ import {
 import { useDispatch } from "react-redux";
 import { removeTodo, updateTodo } from "../features/TodoSlice.js";
 
-const TodoItem = ({ todo, index = 0 }) => { // Default value for index
-  const completed = todo.completed; // Assumes completed is already 0 or 1 (numeric)
+const TodoItem = ({ todo, index = 0 }) => {
   const dispatch = useDispatch();
+  const isCompleted = todo.completed === 1;
 
-  const markCompleted = (todo) => {
+  const handleToggleComplete = () => {
     dispatch(
       updateTodo({
         id: todo.id,
         title: todo.title,
-        completed: completed === 0 ? 1 : 0,
+        completed: isCompleted ? 0 : 1,
         date: todo.date,
         updated: Date.now(),
       })
     );
   };
 
+  const handleRemove = () => dispatch(removeTodo(todo.id));
+
   return (
-    <li className="flex flex-col sm:flex-row sm:items-center justify-between border-b-2 py-2 gap-4">
-      <div className="flex items-center">
-        <span className="mr-4 text-gray-500">{index + 1}.</span>
-        <span className={`mr-4 ${completed ? "line-through text-gray-500" : ""}`}>
-          <span className="text-lg">{todo.title}</span>
-          <p className="text-gray-500 text-sm italic">
-            created : {new Date(todo.date).toLocaleString("id-ID")} |
-            updated : {new Date(todo.updated).toLocaleString("id-ID")}
+    <li
+      className={`flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-200 py-3 px-2 rounded-md transition ${
+        isCompleted ? "bg-gray-50" : "bg-white"
+      } hover:bg-gray-100`}
+    >
+      {/* Left section */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+        <span className="text-gray-400 font-medium">{index + 1}.</span>
+        <div>
+          <span
+            className={`text-lg font-medium ${
+              isCompleted ? "line-through text-gray-500" : "text-gray-800"
+            }`}
+          >
+            {todo.title}
+          </span>
+          <p className="text-xs text-gray-500 italic mt-1">
+            Created: {new Date(todo.date).toLocaleString("id-ID")} | Updated:{" "}
+            {new Date(todo.updated).toLocaleString("id-ID")}
           </p>
-        </span>
+        </div>
       </div>
-      <div className="space-x-3 ml-8">
+
+      {/* Right section (actions) */}
+      <div className="flex items-center gap-2 mt-2 sm:mt-0">
+        {/* Toggle complete */}
         <button
-          className="mr-2 text-sm bg-blue-500 text-white sm:px-2 px-1 py-1 rounded"
-          onClick={() => markCompleted(todo)}
+          title={isCompleted ? "Mark as Incomplete" : "Mark as Complete"}
+          className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition"
+          onClick={handleToggleComplete}
         >
-          {completed ? <FaToggleOff /> : <FaToggleOn />}
+          {isCompleted ? <FaToggleOff /> : <FaToggleOn />}
         </button>
+
+        {/* Delete */}
         <button
-          className="mr-2 text-sm bg-red-500 text-white sm:px-2 px-1 py-1 rounded"
-          onClick={() => dispatch(removeTodo(todo.id))}
+          title="Delete Todo"
+          className="p-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition"
+          onClick={handleRemove}
         >
           <FaTrash />
         </button>
-        {completed === 0 && (
+
+        {/* Status indicator buttons */}
+        {isCompleted ? (
           <button
-            className="text-sm bg-green-500 text-white sm:px-2 px-1 py-1 rounded"
-            onClick={() => markCompleted(todo)}
-          >
-            <FaCheck />
-          </button>
-        )}
-        {completed === 1 && (
-          <button
-            className="text-sm bg-yellow-500 text-white sm:px-2 px-1 py-1 rounded"
-            onClick={() => markCompleted(todo)}
+            title="Undo Complete"
+            className="p-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition"
+            onClick={handleToggleComplete}
           >
             <FaTimes />
+          </button>
+        ) : (
+          <button
+            title="Mark as Done"
+            className="p-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition"
+            onClick={handleToggleComplete}
+          >
+            <FaCheck />
           </button>
         )}
       </div>
@@ -72,7 +95,13 @@ const TodoItem = ({ todo, index = 0 }) => { // Default value for index
 };
 
 TodoItem.propTypes = {
-  todo: PropTypes.object.isRequired,
+  todo: PropTypes.shape({
+    id: PropTypes.number.isRequired,
+    title: PropTypes.string.isRequired,
+    completed: PropTypes.number.isRequired,
+    date: PropTypes.number.isRequired,
+    updated: PropTypes.number.isRequired,
+  }).isRequired,
   index: PropTypes.number,
 };
 

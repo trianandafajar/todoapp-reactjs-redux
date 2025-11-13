@@ -1,131 +1,130 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 
-// Async Thunks
-export const getAllTodos = createAsyncThunk("todos/getAllTodos", async () => {
+// 🔧 Setup Axios base URL (optional, improves maintainability)
+axios.defaults.baseURL = "http://localhost:3000/"; // Ganti sesuai API kamu
+
+// 🔄 Async Thunks
+export const getAllTodos = createAsyncThunk("todos/getAll", async (_, { rejectWithValue }) => {
   try {
-    const result = await axios.get("todo");
-    return result.data;
+    const { data } = await axios.get("todo");
+    return data;
   } catch (error) {
-    console.error(error);
-    throw new Error("Failed to fetch todos");
+    console.error("❌ Fetch error:", error);
+    return rejectWithValue(error.response?.data?.message || "Failed to fetch todos");
   }
 });
 
-export const searchTodos = createAsyncThunk(
-  "todos/searchTodos",
-  async (query) => {
-    try {
-      const result = await axios.get(`todo?title_like=${query}`);
-      return result.data;
-    } catch (error) {
-      console.error(error);
-      throw new Error("Failed to search todos");
-    }
-  }
-);
-
-export const insertTodo = createAsyncThunk("todos/insertTodo", async (todo) => {
+export const searchTodos = createAsyncThunk("todos/search", async (query, { rejectWithValue }) => {
   try {
-    await axios.post("todo", todo);
-    return todo; // Returning the inserted todo directly instead of refetching
-  } catch (err) {
-    console.error(err);
-    throw new Error("Failed to add todo");
+    const { data } = await axios.get(`todo?title_like=${query}`);
+    return data;
+  } catch (error) {
+    console.error("❌ Search error:", error);
+    return rejectWithValue(error.response?.data?.message || "Failed to search todos");
   }
 });
 
-export const removeTodo = createAsyncThunk("todos/removeTodo", async (id) => {
+export const insertTodo = createAsyncThunk("todos/insert", async (todo, { rejectWithValue }) => {
+  try {
+    const { data } = await axios.post("todo", todo);
+    return data;
+  } catch (error) {
+    console.error("❌ Insert error:", error);
+    return rejectWithValue(error.response?.data?.message || "Failed to add todo");
+  }
+});
+
+export const removeTodo = createAsyncThunk("todos/remove", async (id, { rejectWithValue }) => {
   try {
     await axios.delete(`todo/${id}`);
-    return id; // Returning the id to remove it from the store
-  } catch (err) {
-    console.error(err);
-    throw new Error("Failed to remove todo");
+    return id;
+  } catch (error) {
+    console.error("❌ Remove error:", error);
+    return rejectWithValue(error.response?.data?.message || "Failed to remove todo");
   }
 });
 
-export const updateTodo = createAsyncThunk("todos/updateTodo", async (todo) => {
+export const updateTodo = createAsyncThunk("todos/update", async (todo, { rejectWithValue }) => {
   try {
-    await axios.put(`todo/${todo.id}`, todo);
-    return todo; // Returning the updated todo
-  } catch (err) {
-    console.error(err);
-    throw new Error("Failed to update todo");
+    const { data } = await axios.put(`todo/${todo.id}`, todo);
+    return data;
+  } catch (error) {
+    console.error("❌ Update error:", error);
+    return rejectWithValue(error.response?.data?.message || "Failed to update todo");
   }
 });
 
-// Initial state
+// 🧱 Initial State
 const initialState = {
   data: [],
   loading: false,
   error: null,
 };
 
-// Reducers and extraReducers
+// 🧩 Slice Definition
 const todoSlice = createSlice({
   name: "todos",
   initialState,
   reducers: {},
+
   extraReducers: (builder) => {
-    const handlePending = (state) => {
+    const pending = (state) => {
       state.loading = true;
       state.error = null;
     };
 
-    const handleFulfilled = (state, action) => {
+    const fulfilled = (state) => {
       state.loading = false;
       state.error = null;
     };
 
-    const handleRejected = (state, action) => {
+    const rejected = (state, action) => {
       state.loading = false;
-      state.error = action.error.message || "Something went wrong";
+      state.error = action.payload || "Something went wrong";
     };
 
     builder
-      // getAllTodos
-      .addCase(getAllTodos.pending, handlePending)
+      // 📦 Get All
+      .addCase(getAllTodos.pending, pending)
       .addCase(getAllTodos.fulfilled, (state, action) => {
-        handleFulfilled(state, action);
+        fulfilled(state);
         state.data = action.payload;
       })
-      .addCase(getAllTodos.rejected, handleRejected)
+      .addCase(getAllTodos.rejected, rejected)
 
-      // searchTodos
-      .addCase(searchTodos.pending, handlePending)
+      // 🔍 Search
+      .addCase(searchTodos.pending, pending)
       .addCase(searchTodos.fulfilled, (state, action) => {
-        handleFulfilled(state, action);
+        fulfilled(state);
         state.data = action.payload;
       })
-      .addCase(searchTodos.rejected, handleRejected)
+      .addCase(searchTodos.rejected, rejected)
 
-      // insertTodo
-      .addCase(insertTodo.pending, handlePending)
+      // ➕ Insert
+      .addCase(insertTodo.pending, pending)
       .addCase(insertTodo.fulfilled, (state, action) => {
-        handleFulfilled(state, action);
-        state.data.push(action.payload); // Directly push the new todo
+        fulfilled(state);
+        state.data.push(action.payload);
       })
-      .addCase(insertTodo.rejected, handleRejected)
+      .addCase(insertTodo.rejected, rejected)
 
-      // removeTodo
-      .addCase(removeTodo.pending, handlePending)
+      // ❌ Remove
+      .addCase(removeTodo.pending, pending)
       .addCase(removeTodo.fulfilled, (state, action) => {
-        handleFulfilled(state, action);
-        state.data = state.data.filter((todo) => todo.id !== action.payload); // Remove the deleted todo
+        fulfilled(state);
+        state.data = state.data.filter((todo) => todo.id !== action.payload);
       })
-      .addCase(removeTodo.rejected, handleRejected)
+      .addCase(removeTodo.rejected, rejected)
 
-      // updateTodo
-      .addCase(updateTodo.pending, handlePending)
+      // 🔄 Update
+      .addCase(updateTodo.pending, pending)
       .addCase(updateTodo.fulfilled, (state, action) => {
-        handleFulfilled(state, action);
-        const index = state.data.findIndex((todo) => todo.id === action.payload.id);
-        if (index !== -1) {
-          state.data[index] = action.payload; // Update the specific todo
-        }
+        fulfilled(state);
+        const index = state.data.findIndex((t) => t.id === action.payload.id);
+        if (index !== -1) state.data[index] = action.payload;
       })
-      .addCase(updateTodo.rejected, handleRejected);
+      .addCase(updateTodo.rejected, rejected);
   },
 });
 
